@@ -1,13 +1,17 @@
 import pandas as pd
-import numpy as np
 import os
 import json
-from datetime import datetime
+import logging
 
-
-
+# Initialising logger for checking steps
+logging.basicConfig(
+    filename='./logs/ingestion.logs',
+    level=logging.INFO,
+    filemode='w',
+    format='%(name)s - %(levelname)s - %(message)s')
 
 #############Load config.json and get input and output paths
+logging.info("Loading config.json for getting path variables")
 with open('config.json','r') as f:
     config = json.load(f) 
 
@@ -15,9 +19,6 @@ input_folder_path = config['input_folder_path']
 output_folder_path = config['output_folder_path']
 
 current_dir = os.getcwd()
-
-# get current date
-today = datetime.today().strftime('%Y%m%d')
 
 #############Function for data ingestion
 def merge_multiple_dataframe():
@@ -46,11 +47,11 @@ def merge_multiple_dataframe():
     # drop duplicates
     result = final_df.drop_duplicates()
     # path to store the final data
-    data_path = os.path.join(output_folder_path, f'{today}_final_data.csv')
+    data_path = os.path.join(output_folder_path, 'finaldata.csv') # f'{today}_final_data.csv'
     # save the final data in csv
     result.to_csv(data_path, index=False)
 
-    data_path = os.path.join(output_folder_path, f'{today}_ingestedfiles.txt')
+    data_path = os.path.join(output_folder_path, 'ingestedfiles.txt')
     # list of the ingested .csv files
     with open(data_path, 'w') as f:
         f.write(str(ingested_files))

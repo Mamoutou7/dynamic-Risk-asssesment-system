@@ -1,15 +1,23 @@
+"""
+Name: diagnostics.py
+Summary:
+Module for diagnosing the Machine learning pipeline
+Author: Mamoutou Fofana
+Date: 23/02/2023
+"""
 import pickle
-
 import pandas as pd
 import numpy as np
 import time
 import os
 import json
 import subprocess
+from io import StringIO
+
 from training import split_dataset
 
-##################Load config.json and get environment variables
 
+##################Load config.json and get environment variables
 
 with open('config.json','r') as f:
     config = json.load(f) 
@@ -17,13 +25,14 @@ with open('config.json','r') as f:
 dataset_csv_path = os.path.join(config['output_folder_path']) 
 test_data_path = os.path.join(config['test_data_path']) 
 model_deployment_path = os.path.join(config['prod_deployment_path'])
+
 ##################Function to get model predictions
 def model_predictions(dataset=None):
     # read the deployed model and a test dataset, calculate predictions
 
     if dataset is None:
-        test_data = os.path.join(test_data_path, 'testdata.csv')
-        test_data = pd.read_csv(test_data)
+        dataset_path = os.path.join(test_data_path, 'testdata.csv')
+        dataset = pd.read_csv(dataset_path)
 
     # load the deployed model
     prod_deployment_path = os.path.join(model_deployment_path, 'trainedmodel.pkl')
@@ -31,7 +40,7 @@ def model_predictions(dataset=None):
         model = pickle.load(f)
 
     # split testdata into X and y
-    X, y = split_dataset(test_data)
+    X, y = split_dataset(dataset)
 
     # evaluate model on test set
     preds = model.predict(X)
@@ -41,10 +50,17 @@ def model_predictions(dataset=None):
 
 ##################Function to get summary statistics
 def dataframe_summary():
-    #calculate summary statistics here
+    """
+    calculate summary statistics here
+    :param: None
+    :return: value should be a list containing all summary statistics
+    """
+    # construct datatset path
     dataset_path = os.path.join(dataset_csv_path, 'finaldata.csv')
+    # read dataset
     dataset = pd.read_csv(dataset_path)
 
+    statistics = []
     # numeric columns
     numeric_column_idx = np.where(dataset.dtypes != object)[0]
     numeric_column = dataset.columns[numeric_column_idx].tolist()
@@ -52,12 +68,10 @@ def dataframe_summary():
     stds = dataset[numeric_column].std().to_list()
     medians = dataset[numeric_column].quantile().to_list()
 
-
-    statistics = means
+    statistics.append(means)
     statistics.append(medians)
     statistics.append(stds)
 
-    # return value should be a list containing all summary statistics
     return statistics
 
 ##################Function to get missing data
@@ -74,28 +88,22 @@ def missing_data():
     return missing_data.to_list()
 
 ##################Function to get timings
-def execution_time():
-    #calculate timing of training.py and ingestion.py
-    execution_durations = []
+def execution_time(filenames):
+    """
+    calculate timing of training.py and ingestion.py
+    :param filenames: list of files names in filenames to run and to calculate their execution durations
+    :return: [dictionary] A dictionary with execution duration of file in filenames
+    """
+    execution_durations = {}
+    for file in filenames:
 
-    start_time = time.time()
-    os.system('python ingestion.py')
-    end_time = time.time()
+        start_time = time.time()
+        os.system("python "+str(file))
+        end_time = time.time() - start_time
+        execution_durations[file] = end_time
+        # return a list of 2 timing values in seconds
 
-    execution_duration = start_time - end_time
-    execution_durations.append(execution_duration)
-
-    start_time = time.time()
-    os.system('python training.py')
-    end_time = time.time()
-    execution_duration = start_time - end_time
-
-    execution_durations.append(execution_duration)
-
-    # return a list of 2 timing values in seconds
     return execution_durations
-
-from io import StringIO
 
 def cmd_output_df(cmd):
     """
@@ -131,7 +139,6 @@ def outdated_packages_list():
     requirements = requirements.set_index('Package')
 
     dependencies = requirements.join(current_dependencies)
-    print(dependencies.head())
     for p in outdated_dependencies.index:
         if p in dependencies.index:
             dependencies.loc[p, 'Latest'] = outdated_dependencies.loc[p, 'Latest']
@@ -146,7 +153,8 @@ if __name__ == '__main__':
     model_predictions(dataset=None)
     dataframe_summary()
     missing_data()
-    execution_time()
+    filenames = ["training.py", "ingestion.py"]
+    execution_time(filenames)
     outdated_packages_list()
 
 

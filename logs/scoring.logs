@@ -1,0 +1,4 @@
+root - INFO - Loading config.json for getting path variables
+root - INFO - Defining the model saved path variable
+root - INFO - Defining the last score path variable
+root - INFO - Writing the model score to latestscore.txt

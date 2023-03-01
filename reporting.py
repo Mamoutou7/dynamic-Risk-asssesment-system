@@ -29,7 +29,7 @@ def score_model():
     y = dataset['exited']
     # calculate confusion matrix
     cm = metrics.confusion_matrix(y, predicted)
-    print(cm)
+
     # Setting default size of the plot
     # Setting default fontsize used in the plot
     plt.rcParams['figure.figsize'] = (10.0, 9.0)
